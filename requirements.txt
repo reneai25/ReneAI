@@ -9,4 +9,3 @@ matplotlib
 svgpathtools
 tqdm
 networkx
-surya-ocr
