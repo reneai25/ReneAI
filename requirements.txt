@@ -9,4 +9,4 @@ matplotlib
 svgpathtools
 tqdm
 networkx
-surya-ocr
+surya==0.4.0
