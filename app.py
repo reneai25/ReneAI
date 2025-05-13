@@ -9,10 +9,11 @@ from qdrant_client import QdrantClient
 from qdrantdb import create_qdrant_collection, add_documents_to_qdrant
 from typsesensedb import setup_typesense_collection, add_to_typesense, hybrid_search
 from svg_to_graph import process_svg
-import os
 from streamlit_modal import Modal
 import json
 from dotenv import load_dotenv
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 st.set_page_config(layout="wide")
 load_dotenv()
