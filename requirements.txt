@@ -1,0 +1,12 @@
+typesense
+streamlit
+google-genai
+qdrant-client
+streamlit-modal
+python-dotenv
+numpy
+matplotlib
+svgpathtools
+tqdm
+networkx
+surya-ocr
