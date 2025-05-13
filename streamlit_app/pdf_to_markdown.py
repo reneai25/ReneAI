@@ -1,7 +1,7 @@
 # pdf_to_markdown.py
 
-from marker.marker.models import create_model_dict
-from marker.marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
+from marker.converters.pdf import PdfConverter
 import tempfile
 import os
 
