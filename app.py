@@ -33,10 +33,8 @@ for key, default in {
     "selected_folder": None,
 }.items():
     st.session_state.setdefault(key, default)
-q_port = os.environ.get("QPORT")
-if not q_port:
-    raise RuntimeError("QPORT env var is missing – did you add the Qdrant plugin?")
-qdrant_url = f"http://qdrant:{q_port}"
+
+qdrant_url = os.environ.get("QDRANT_URL")
 if 'qdrant_client' not in st.session_state:
     st.session_state.qdrant_client = QdrantClient(url=qdrant_url)
 if 'typesense_client' not in st.session_state:
