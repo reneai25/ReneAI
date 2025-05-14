@@ -38,7 +38,7 @@ if 'qdrant_client' not in st.session_state:
     st.session_state.qdrant_client = QdrantClient(url=qdrant_url)
 if 'typesense_client' not in st.session_state:
     st.session_state.typesense_client = typesense.Client({
-        'api_key': os.getenviron('TYPESENSE_API_KEY'),
+        'api_key': os.getenv('TYPESENSE_API_KEY'),
         'nodes': [{
             'host': 'localhost',
             'port': 8108,
