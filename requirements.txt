@@ -16,6 +16,7 @@ opencv-python-headless
 transformers
 pydantic
 pydantic-settings
+markdownify
 platformdirs
 pypdfium2
 filetype
