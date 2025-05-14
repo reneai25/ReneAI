@@ -9,3 +9,9 @@ matplotlib
 svgpathtools
 tqdm
 networkx
+shapely
+torch
+Pillow
+opencv-python
+transformers
+pydantic
