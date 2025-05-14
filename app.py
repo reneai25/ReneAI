@@ -18,9 +18,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 st.set_page_config(layout="wide")
 load_dotenv()
 collection_name = "blueprints"
-vector_size = 768
+vector_size = 768 
 
-# Initialize session state
 for key, default in {
     "selected_file": None,
     "processed": False,
@@ -32,18 +31,6 @@ for key, default in {
     "db_stored": False,
     "selected_gnn_image_path": None,
     "selected_folder": None,
-    "show_pass_key": True,
-    "passkey_validated": False,
-    "show_modal": False,
-    "view_text": False,
-    "view_images": False,
-    "image_category": None,
-    "formatted": False,
-    "view_pdf": False,
-    "view_qa": False,
-    "current_question": None,
-    "current_answer": None,
-    "custom_question_input": "",
 }.items():
     st.session_state.setdefault(key, default)
 
@@ -53,10 +40,9 @@ if not qdrant_url:
 
 st.session_state.qdrant_client = QdrantClient(
     url=qdrant_url,
-    prefer_grpc=False,
-    timeout=30.0,
+    prefer_grpc=False,    # use HTTP(S) API
+    timeout=30.0,         # enough time for Railway-hosted Qdrant
 )
-
 if 'typesense_client' not in st.session_state:
     ts_host = os.environ.get("TYPESENSE_HOST", "typesense")
     ts_port = os.environ.get("TYPESENSE_PORT", os.environ.get("PORT"))
@@ -72,57 +58,81 @@ if 'typesense_client' not in st.session_state:
         "connection_timeout_seconds": 2
     })
 
+if 'selected_file' not in st.session_state:
+    st.session_state.selected_file = None
+
+
+
+# Initialize view-related session state keys at a higher scope (once per session)
+st.session_state.setdefault("view_text", False)
+st.session_state.setdefault("view_images", False)
+st.session_state.setdefault("image_category", None)
+st.session_state.setdefault("formatted", False)
+st.session_state.setdefault("view_pdf", False) 
+
 modal = Modal(title="Upload PDF", key="upload_modal")
+
 SAMPLE_DIR = "samples"
-CATEGORIES = ["floor plans", "site plans", "elevation plans", "details", "company logo", "other"]
+CATEGORIES = ["floor plans", "site plans", "elevation plans", "details", "company logo","other"] # Define CATEGORIES at a broader scope
+
 api_key = os.getenv("API_KEY")
 client = genai.Client(api_key=api_key)
-
-# CSS styling
+# Remove duplicate CSS blocks and combine into one with proper tab spacing
 st.markdown("""
 <style>
+    /* Increase main app title font size */
     h1 {
         font-size: 3rem !important;
         font-weight: 700 !important;
     }
+    
+    /* Style tab titles with increased size and spacing */
     .stTabs [data-baseweb="tab-list"] {
         gap: 2rem !important;
     }
+    
     .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
         font-size: 1.25rem;
         font-weight: 600;
         padding: 0 1rem;
     }
+    
+    /* Add spacing for h3 headers */
     h3 {
         margin-right: 1rem !important;
         margin-bottom: 2rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
-
+st.session_state.setdefault("show_pass_key", True)
 st.title("Rene AI")
+pass_key_input = None # Initialize to None
 
-# Passkey logic
-if st.session_state.show_pass_key and not st.session_state.passkey_validated:
-    pass_key_input = st.text_input("Enter passkey", type="password", key="pass_key_field")
-    if pass_key_input == os.getenv("PASS_KEY"):
-        st.session_state.passkey_validated = True
+if st.session_state.show_pass_key:
+    pass_key_input = st.text_input("Enter passkey", type="password", key="pass_key_field") # Added a unique key
+    if pass_key_input == os.getenv("PASS_KEY"): # Ensure "PASS_KEY" matches your .env file
         st.session_state.show_pass_key = False
-    elif pass_key_input and pass_key_input != "":
+        # st.rerun() # Force a rerun to hide the input and show content
+    elif pass_key_input and pass_key_input != "": # Show error only if something was typed and it's wrong
         st.error("Invalid passkey. Please try again.")
-else:
-    # Main app
+if not st.session_state.show_pass_key:
+    # Now create the tabs
     tab1, tab2 = st.tabs(["AI Plan Check Review and Quantity Takeoff", "Spatial GNN Reasoning"])
     with tab1:
+
+        # PDF Upload Button and Modal Logic (remains largely the same)
         col_upload_btn1, col_upload_btn2, col_upload_btn3 = st.columns([1, 2, 1])
         with col_upload_btn2:
             if st.button("Upload PDF", use_container_width=True):
                 st.session_state.show_modal = True
                 modal.open()
+                # st.rerun()
 
         if modal.is_open() and st.session_state.show_modal:
             with modal.container():
                 st.markdown("## Choose or Upload a PDF")
+                # ... (modal content: sample choice, uploader, proceed button) ...
+                # (Ensure this part correctly updates st.session_state.selected_file and reruns)
                 col_modal1, col_modal2 = st.columns(2)
                 with col_modal1:
                     samples = [f for f in reversed(os.listdir(SAMPLE_DIR)) if f.endswith(".pdf")]
@@ -135,20 +145,26 @@ else:
                         new_selection = uploaded
                     elif sample_choice != "None":
                         new_selection = os.path.join(SAMPLE_DIR, sample_choice)
+                    
                     if new_selection:
                         if st.session_state.selected_file != new_selection:
                             st.session_state.selected_file = new_selection
-                            st.session_state.processed = False
-                            st.session_state.categories = None
+                            st.session_state.processed = False # Mark for reprocessing
+                            st.session_state.categories = None # Reset categories
                             st.session_state.extracted_text = ""
                             st.session_state.extracted_images = {}
-                            st.session_state.document_name = None
-                            st.session_state.image_analysis = {}
-                            st.session_state.formatted = False
+                            st.session_state.document_name = None # Reset document name
+                            st.session_state.image_analysis = {} # Reset image_analysis
+                            st.session_state.formatted = False # Reset formatted flag
                             st.session_state.db_stored = False
-                    modal.close()
-                    st.session_state.show_modal = False
+                        modal.close()
+                        st.session_state.show_modal = False
+                        # st.experimental_rerun()
+                    else:
+                        st.error("Please select a sample or upload a file.")
+                        # st.stop() # Not needed if modal stays open
 
+        # Display selected file name (guarded)
         if st.session_state.selected_file:
             current_file_name = ""
             if hasattr(st.session_state.selected_file, 'name'):
@@ -157,30 +173,28 @@ else:
                 current_file_name = os.path.basename(str(st.session_state.selected_file))
             st.write("Selected file:", current_file_name)
 
-        # Step 1: Process PDF
+        # --- Step 1: Process PDF (extract text & images) if a new file is selected or not yet processed ---
         if st.session_state.selected_file and \
-           (st.session_state.selected_file != st.session_state.document_name or \
+        (st.session_state.selected_file != st.session_state.document_name or \
             not st.session_state.processed):
+            
+            # If it's a genuinely new file different from the last processed one
             if st.session_state.selected_file != st.session_state.document_name:
                 st.session_state.processed = False
                 st.session_state.categories = None
                 st.session_state.extracted_text = ""
                 st.session_state.extracted_images = {}
-            if not st.session_state.processed:
+
+            if not st.session_state.processed: # Proceed only if not marked as processed
                 with st.spinner("Processing PDF (extracting text & images)..."):
-                    try:
-                        markdown, images = pdf_to_markdown(
-                            st.session_state.selected_file, api_key
-                        )
-                        st.session_state.extracted_text = markdown
-                        st.session_state.extracted_images = images
-                        st.session_state.processed = True
-                        st.session_state.document_name = st.session_state.selected_file
-                        st.success("PDF content extracted!")
-                    except Exception as e:
-                        st.error(f"Error processing PDF: {str(e)}")
-                        print(f"PDF processing failed: {str(e)}")
-                        st.session_state.processed = False
+                    markdown, images = pdf_to_markdown(
+                        st.session_state.selected_file, api_key
+                    )
+                    st.session_state.extracted_text = markdown
+                    st.session_state.extracted_images = images
+                    st.session_state.processed = True
+                    st.session_state.document_name = st.session_state.selected_file # Update to current file
+                st.success("PDF content extracted!")
 
         # --- Step 2: Classify Images if processed and not yet categorized ---
         if st.session_state.processed and \
