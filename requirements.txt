@@ -16,3 +16,4 @@ opencv-python
 transformers
 pydantic
 pydantic-settings
+platformdirs
