@@ -10,6 +10,7 @@ svgpathtools
 markdown2
 tqdm
 networkx
+scikit-learn
 shapely
 torch
 Pillow
