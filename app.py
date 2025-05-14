@@ -126,7 +126,7 @@ if not st.session_state.show_pass_key:
             if st.button("Upload PDF", use_container_width=True):
                 st.session_state.show_modal = True
                 modal.open()
-                st.experimental_rerun()
+                st.rerun()
 
         if modal.is_open() and st.session_state.show_modal:
             with modal.container():
