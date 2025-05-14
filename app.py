@@ -35,11 +35,13 @@ for key, default in {
     st.session_state.setdefault(key, default)
 
 qdrant_url = os.environ.get("QDRANT_URL")
-if 'qdrant_client' not in st.session_state:
-    st.session_state.qdrant_client = QdrantClient(
+if not qdrant_url:
+    raise RuntimeError("Missing QDRANT_URL env var – please set it to your plugin’s Public URL")
+
+st.session_state.qdrant_client = QdrantClient(
     url=qdrant_url,
-    prefer_grpc=False,      # talk HTTP(S) instead of gRPC
-    timeout=50.0,           # 30 second request timeout
+    prefer_grpc=False,    # use HTTP(S) API
+    timeout=30.0,         # enough time for Railway-hosted Qdrant
 )
 if 'typesense_client' not in st.session_state:
     ts_host = os.environ.get("TYPESENSE_HOST", "typesense")
