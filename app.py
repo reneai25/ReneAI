@@ -36,7 +36,11 @@ for key, default in {
 
 qdrant_url = os.environ.get("QDRANT_URL")
 if 'qdrant_client' not in st.session_state:
-    st.session_state.qdrant_client = QdrantClient(url=qdrant_url)
+    st.session_state.qdrant_client = QdrantClient(
+    url=qdrant_url,
+    prefer_grpc=False,      # talk HTTP(S) instead of gRPC
+    timeout=30.0,           # 30 second request timeout
+)
 if 'typesense_client' not in st.session_state:
     ts_host = os.environ.get("TYPESENSE_HOST", "typesense")
     ts_port = os.environ.get("TYPESENSE_PORT", os.environ.get("PORT"))
