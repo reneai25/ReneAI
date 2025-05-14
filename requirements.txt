@@ -22,7 +22,7 @@ filetype
 click
 einops
 pre-commit
-surya-ocr == "~0.13.1"
+surya-ocr == 0.13.1
 jupyter
 pytesseract
 pymupdf
