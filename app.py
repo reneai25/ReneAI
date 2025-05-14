@@ -34,7 +34,7 @@ for key, default in {
 }.items():
     st.session_state.setdefault(key, default)
 
-qdrant_url = os.environ.get("QDRANT_URL")
+qdrant_url = "http://qdrant.railway.internal:6333"
 if not qdrant_url:
     raise RuntimeError("Missing QDRANT_URL env var – please set it to your plugin’s Public URL")
 
