@@ -33,15 +33,19 @@ for key, default in {
     "selected_folder": None,
 }.items():
     st.session_state.setdefault(key, default)
-qdrant_url = os.getenv("QDRANT_URL", f"http://qdrant:{os.getenv('QPORT')}")
+q_port = os.environ.get("QPORT")
+if not q_port:
+    raise RuntimeError("QPORT env var is missing – did you add the Qdrant plugin?")
+qdrant_url = f"http://qdrant:{q_port}"
 if 'qdrant_client' not in st.session_state:
     st.session_state.qdrant_client = QdrantClient(url=qdrant_url)
 if 'typesense_client' not in st.session_state:
-    ts_host = os.getenv("TYPESENSE_HOST", "typesense")
-    ts_port = os.getenv("TYPESENSE_PORT", os.getenv("PORT"))
-    ts_api_key = os.environ["TYPESENSE_API_KEY"]
+    ts_host = os.environ.get("TYPESENSE_HOST", "typesense")
+    ts_port = os.environ.get("TYPESENSE_PORT", os.environ.get("PORT"))
+    if not ts_port or "TYPESENSE_API_KEY" not in os.environ:
+        raise RuntimeError("Missing TYPESENSE_HOST/PORT/API_KEY env var(s)")
     st.session_state.typesense_client = typesense.Client({
-        "api_key": ts_api_key,
+        "api_key": os.environ["TYPESENSE_API_KEY"],
         "nodes": [{
             "host": ts_host,
             "port": int(ts_port),
