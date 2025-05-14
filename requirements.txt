@@ -32,3 +32,4 @@ rapidfuzz
 pytest
 pdftext
 tabulate
+ftfy
