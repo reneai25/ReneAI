@@ -33,18 +33,21 @@ for key, default in {
     "selected_folder": None,
 }.items():
     st.session_state.setdefault(key, default)
-qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333") # Default for local
+qdrant_url = os.getenv("QDRANT_URL", f"http://qdrant:{os.getenv('QPORT')}")
 if 'qdrant_client' not in st.session_state:
     st.session_state.qdrant_client = QdrantClient(url=qdrant_url)
 if 'typesense_client' not in st.session_state:
+    ts_host = os.getenv("TYPESENSE_HOST", "typesense")
+    ts_port = os.getenv("TYPESENSE_PORT", os.getenv("PORT"))
+    ts_api_key = os.environ["TYPESENSE_API_KEY"]
     st.session_state.typesense_client = typesense.Client({
-        'api_key': os.getenv('TYPESENSE_API_KEY'),
-        'nodes': [{
-            'host': 'localhost',
-            'port': 8108,
-            'protocol': 'http'
+        "api_key": ts_api_key,
+        "nodes": [{
+            "host": ts_host,
+            "port": int(ts_port),
+            "protocol": "http",
         }],
-        'connection_timeout_seconds':2
+        "connection_timeout_seconds": 2
     })
 
 if 'selected_file' not in st.session_state:
