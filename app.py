@@ -1,6 +1,5 @@
 import typesense
 import streamlit as st
-st.set_option("server.fileWatcherType", "none")
 import os
 from google.genai import types
 from google import genai
