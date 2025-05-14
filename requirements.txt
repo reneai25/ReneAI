@@ -33,3 +33,4 @@ pytest
 pdftext
 tabulate
 ftfy
+ultralytics
