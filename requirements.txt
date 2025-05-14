@@ -19,7 +19,7 @@ opencv-python
 transformers
 pydantic
 pydantic-settings
-markdownify
+markdownify==0.7.4
 platformdirs
 pypdfium2
 filetype
