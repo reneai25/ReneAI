@@ -12,7 +12,7 @@ networkx
 shapely
 torch
 Pillow
-opencv-python-headless==4.11.0.86
+opencv-python
 transformers
 pydantic
 pydantic-settings
