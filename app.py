@@ -112,7 +112,7 @@ if st.session_state.show_pass_key:
     pass_key_input = st.text_input("Enter passkey", type="password", key="pass_key_field") # Added a unique key
     if pass_key_input == os.getenv("PASS_KEY"): # Ensure "PASS_KEY" matches your .env file
         st.session_state.show_pass_key = False
-        st.rerun() # Force a rerun to hide the input and show content
+        # st.rerun() # Force a rerun to hide the input and show content
     elif pass_key_input and pass_key_input != "": # Show error only if something was typed and it's wrong
         st.error("Invalid passkey. Please try again.")
 if not st.session_state.show_pass_key:
@@ -126,7 +126,7 @@ if not st.session_state.show_pass_key:
             if st.button("Upload PDF", use_container_width=True):
                 st.session_state.show_modal = True
                 modal.open()
-                st.rerun()
+                # st.rerun()
 
         if modal.is_open() and st.session_state.show_modal:
             with modal.container():
@@ -159,7 +159,7 @@ if not st.session_state.show_pass_key:
                             st.session_state.db_stored = False
                         modal.close()
                         st.session_state.show_modal = False
-                        st.experimental_rerun()
+                        # st.experimental_rerun()
                     else:
                         st.error("Please select a sample or upload a file.")
                         # st.stop() # Not needed if modal stays open
