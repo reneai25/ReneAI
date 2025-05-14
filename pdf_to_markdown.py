@@ -32,7 +32,7 @@ def pdf_to_markdown(uploaded_file, api_key):
     converter = PdfConverter(
         artifact_dict=create_model_dict(),
         config={
-            "yolo_model_path": "../marker/marker/model/yolo/best.pt",
+            "yolo_model_path": "marker/model/yolo/best.pt",
             "output_format": "json",
             "use_llm": True,
             "gemini_api_key": api_key,
