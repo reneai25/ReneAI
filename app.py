@@ -179,7 +179,6 @@ if not st.session_state.show_pass_key:
                         with open(text_file_path_preload, "r", encoding="utf-8") as f:
                             st.session_state.extracted_text = f.read()
                         text_successfully_preloaded = True
-                        st.info(f"Successfully loaded extracted text from: {text_file_path_preload}")
                     else:
                         st.warning(f"Preloaded text file '{text_file_path_preload}' not found.")
                         st.session_state.extracted_text = "" # Ensure it's reset
