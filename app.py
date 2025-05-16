@@ -233,7 +233,7 @@ if not st.session_state.show_pass_key:
             st.write("Selected file:", current_file_name)
 
         # --- Step 1: Process PDF (extract text & images) if a new file is selected or not yet processed ---
-        if st.session_state.selected_file and not st.session_state.preprocessed and \
+        if st.session_state.selected_file and not st.session_state.preloaded and \
         (st.session_state.selected_file != st.session_state.document_name or \
             not st.session_state.processed):
             
