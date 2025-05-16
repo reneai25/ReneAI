@@ -38,14 +38,12 @@ qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333") # Default for loca
 if 'qdrant_client' not in st.session_state:
     st.session_state.qdrant_client = QdrantClient(url=qdrant_url)
 if 'typesense_client' not in st.session_state:
+    ts_host = os.getenv("TYPESENSE_HOST", "typesense")
+    ts_port = os.getenv("TYPESENSE_PORT", "8108")
     st.session_state.typesense_client = typesense.Client({
         'api_key': os.getenv('TYPESENSE_API_KEY'),
-        'nodes': [{
-            'host': 'localhost',
-            'port': 8108,
-            'protocol': 'http'
-        }],
-        'connection_timeout_seconds':2
+        'nodes': [{'host': ts_host, 'port': int(ts_port), 'protocol': 'http'}],
+        'connection_timeout_seconds': 2
     })
 
 if 'selected_file' not in st.session_state:
