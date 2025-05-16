@@ -12,6 +12,7 @@ from svg_to_graph import process_svg
 from streamlit_modal import Modal
 import json
 from dotenv import load_dotenv
+from PIL import Image
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -33,29 +34,18 @@ for key, default in {
     "selected_folder": None,
 }.items():
     st.session_state.setdefault(key, default)
-
-qdrant_url = "http://qdrant.railway.internal:6333"
-if not qdrant_url:
-    raise RuntimeError("Missing QDRANT_URL env var – please set it to your plugin’s Public URL")
-
-st.session_state.qdrant_client = QdrantClient(
-    url=qdrant_url,
-    prefer_grpc=False,    # use HTTP(S) API
-    timeout=30.0,         # enough time for Railway-hosted Qdrant
-)
+qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333") # Default for local
+if 'qdrant_client' not in st.session_state:
+    st.session_state.qdrant_client = QdrantClient(url=qdrant_url)
 if 'typesense_client' not in st.session_state:
-    ts_host = os.environ.get("TYPESENSE_HOST", "typesense")
-    ts_port = os.environ.get("TYPESENSE_PORT", os.environ.get("PORT"))
-    if not ts_port or "TYPESENSE_API_KEY" not in os.environ:
-        raise RuntimeError("Missing TYPESENSE_HOST/PORT/API_KEY env var(s)")
     st.session_state.typesense_client = typesense.Client({
-        "api_key": os.environ["TYPESENSE_API_KEY"],
-        "nodes": [{
-            "host": ts_host,
-            "port": int(ts_port),
-            "protocol": "http",
+        'api_key': os.getenv('TYPESENSE_API_KEY'),
+        'nodes': [{
+            'host': 'localhost',
+            'port': 8108,
+            'protocol': 'http'
         }],
-        "connection_timeout_seconds": 2
+        'connection_timeout_seconds':2
     })
 
 if 'selected_file' not in st.session_state:
@@ -73,6 +63,7 @@ st.session_state.setdefault("view_pdf", False)
 modal = Modal(title="Upload PDF", key="upload_modal")
 
 SAMPLE_DIR = "samples"
+PRELOADED_DIR = "preloaded"
 CATEGORIES = ["floor plans", "site plans", "elevation plans", "details", "company logo","other"] # Define CATEGORIES at a broader scope
 
 api_key = os.getenv("API_KEY")
@@ -112,7 +103,7 @@ if st.session_state.show_pass_key:
     pass_key_input = st.text_input("Enter passkey", type="password", key="pass_key_field") # Added a unique key
     if pass_key_input == os.getenv("PASS_KEY"): # Ensure "PASS_KEY" matches your .env file
         st.session_state.show_pass_key = False
-        # st.rerun() # Force a rerun to hide the input and show content
+        st.rerun() # Force a rerun to hide the input and show content
     elif pass_key_input and pass_key_input != "": # Show error only if something was typed and it's wrong
         st.error("Invalid passkey. Please try again.")
 if not st.session_state.show_pass_key:
@@ -126,7 +117,7 @@ if not st.session_state.show_pass_key:
             if st.button("Upload PDF", use_container_width=True):
                 st.session_state.show_modal = True
                 modal.open()
-                # st.rerun()
+                st.experimental_rerun()
 
         if modal.is_open() and st.session_state.show_modal:
             with modal.container():
@@ -143,8 +134,10 @@ if not st.session_state.show_pass_key:
                     new_selection = None
                     if uploaded is not None:
                         new_selection = uploaded
+                        source_type='uploaded'
                     elif sample_choice != "None":
                         new_selection = os.path.join(SAMPLE_DIR, sample_choice)
+                        source_type='sample'
                     
                     if new_selection:
                         if st.session_state.selected_file != new_selection:
@@ -157,9 +150,74 @@ if not st.session_state.show_pass_key:
                             st.session_state.image_analysis = {} # Reset image_analysis
                             st.session_state.formatted = False # Reset formatted flag
                             st.session_state.db_stored = False
+                            if source_type == "sample":
+                                current_file_name_for_preload = os.path.basename(str(new_selection)) # e.g., "US24-004 = A+_Cavanaugh ADU.pdf"
+                                preloaded_folder_name_without_ext = os.path.splitext(current_file_name_for_preload)[0] # e.g., "US24-004 = A+_Cavanaugh ADU"
+                                
+                                # Path for the preloaded markdown file (e.g., "preloaded/US24-004 = A+_Cavanaugh ADU.md")
+                                text_file_path_preload = os.path.join(PRELOADED_DIR, preloaded_folder_name_without_ext + ".md")
+                                
+                                # Path for the directory containing preloaded image assets 
+                                # (e.g., "preloaded/US24-004 = A+_Cavanaugh ADU/")
+                                image_assets_dir_preload = os.path.join(PRELOADED_DIR, preloaded_folder_name_without_ext)
+
+                                text_successfully_preloaded = False
+                                images_successfully_preloaded = False
+                                
+                                try:
+                                    with st.spinner(f"Processing for {current_file_name_for_preload}..."):
+                                        # 1. Attempt to load pre-extracted text
+                                        if os.path.exists(text_file_path_preload):
+                                            with open(text_file_path_preload, "r", encoding="utf-8") as f:
+                                                st.session_state.extracted_text = f.read()
+                                            text_successfully_preloaded = True
+                                            st.info(f"Successfully loaded extracted text from: {text_file_path_preload}")
+                                        else:
+                                            st.warning(f"Preloaded text file '{text_file_path_preload}' not found.")
+                                            st.session_state.extracted_text = "" # Ensure it's reset
+
+                                        # 2. Attempt to load pre-extracted images
+                                        loaded_images = {}
+                                        # Check if the specific directory for this sample's images exists
+                                        if os.path.isdir(image_assets_dir_preload):
+                                            images_subfolder = os.path.join(image_assets_dir_preload, "images")
+                                            if os.path.isdir(images_subfolder):
+                                                for img_fname in os.listdir(images_subfolder):
+                                                    if img_fname.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+                                                        try:
+                                                            img_full_path = os.path.join(images_subfolder, img_fname)
+                                                            loaded_images[img_fname] = Image.open(img_full_path) 
+                                                        except Exception as e:
+                                                            st.warning(f"Could not load preloaded image {img_fname} from {images_subfolder}: {e}")
+                                                if loaded_images:
+                                                    images_successfully_preloaded = True
+                                                    st.info(f"Successfully loaded extracted images from: {images_subfolder}")
+                                                else: # Folder exists but no images loaded
+                                                    st.info(f"No images found/loaded in preloaded image subfolder: {images_subfolder}")
+                                            elif os.path.exists(images_subfolder):
+                                                st.warning(f"Expected 'images' to be a directory within '{image_assets_dir_preload}', but found a file.")
+                                            else: # 'images' subfolder doesn't exist
+                                                st.info(f"No 'images' subfolder found in '{image_assets_dir_preload}'. No preloaded images will be loaded.")
+                                        else:
+                                            st.info(f"No preloaded image assets directory found at '{image_assets_dir_preload}'.")
+                                        
+                                        st.session_state.extracted_images = loaded_images
+
+                                        # Update processed state based on what was loaded
+                                        if text_successfully_preloaded and images_successfully_preloaded:
+                                            st.session_state.processed = True
+                                            st.session_state.document_name = st.session_state.selected_file # Link to the original PDF selection
+                                            st.success(f"Pre-extracted data loaded for {current_file_name_for_preload}.")
+                                        else:
+                                            st.info(f"No pre-extracted text or images found for {current_file_name_for_preload}. PDF will be processed live if needed.")
+                                            st.session_state.processed = False # Fallback to live processing
+
+                                except Exception as e:
+                                    st.error(f"An error occurred while trying to load pre-extracted data for {current_file_name_for_preload}: {e}")
+                                    st.session_state.processed = False
                         modal.close()
                         st.session_state.show_modal = False
-                        # st.experimental_rerun()
+                        st.experimental_rerun()
                     else:
                         st.error("Please select a sample or upload a file.")
                         # st.stop() # Not needed if modal stays open
