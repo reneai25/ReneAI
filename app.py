@@ -51,7 +51,7 @@ if 'typesense_client' not in st.session_state:
 if 'selected_file' not in st.session_state:
     st.session_state.selected_file = None
 
-
+st.session_state.preloaded=False
 
 # Initialize view-related session state keys at a higher scope (once per session)
 st.session_state.setdefault("view_text", False)
@@ -153,14 +153,14 @@ if not st.session_state.show_pass_key:
                             if source_type == "sample":
                                 current_file_name_for_preload = os.path.basename(str(new_selection)) # e.g., "US24-004 = A+_Cavanaugh ADU.pdf"
                                 preloaded_folder_name_without_ext = os.path.splitext(current_file_name_for_preload)[0] # e.g., "US24-004 = A+_Cavanaugh ADU"
-                                
+                                st.write(preloaded_folder_name_without_ext)
                                 # Path for the preloaded markdown file (e.g., "preloaded/US24-004 = A+_Cavanaugh ADU.md")
                                 text_file_path_preload = os.path.join(PRELOADED_DIR, preloaded_folder_name_without_ext + ".md")
-                                
+                                st.write(text_file_path_preload)
                                 # Path for the directory containing preloaded image assets 
                                 # (e.g., "preloaded/US24-004 = A+_Cavanaugh ADU/")
                                 image_assets_dir_preload = os.path.join(PRELOADED_DIR, preloaded_folder_name_without_ext)
-
+                                st.write(image_assets_dir_preload)
                                 text_successfully_preloaded = False
                                 images_successfully_preloaded = False
                                 
@@ -206,6 +206,7 @@ if not st.session_state.show_pass_key:
                                         # Update processed state based on what was loaded
                                         if text_successfully_preloaded and images_successfully_preloaded:
                                             st.session_state.processed = True
+                                            st.session_state.preloaded=True
                                             st.session_state.document_name = st.session_state.selected_file # Link to the original PDF selection
                                             st.success(f"Pre-extracted data loaded for {current_file_name_for_preload}.")
                                         else:
@@ -232,7 +233,7 @@ if not st.session_state.show_pass_key:
             st.write("Selected file:", current_file_name)
 
         # --- Step 1: Process PDF (extract text & images) if a new file is selected or not yet processed ---
-        if st.session_state.selected_file and \
+        if st.session_state.selected_file and not st.session_state.preprocessed and \
         (st.session_state.selected_file != st.session_state.document_name or \
             not st.session_state.processed):
             
