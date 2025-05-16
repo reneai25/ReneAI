@@ -99,12 +99,18 @@ st.session_state.setdefault("show_pass_key", True)
 st.title("Rene AI")
 pass_key_input = None # Initialize to None
 
-if st.session_state.show_pass_key:
-    pass_key_input = st.text_input("Enter passkey", type="password", key="pass_key_field") # Added a unique key
-    if pass_key_input == os.getenv("PASS_KEY"): # Ensure "PASS_KEY" matches your .env file
+if "passkey_validated" not in st.session_state:
+    st.session_state.passkey_validated = False
+if "uploaded_type" not in st.session_state:
+    st.session_state.uploaded_type = ''
+
+if st.session_state.show_pass_key and not st.session_state.passkey_validated:
+    pass_key_input = st.text_input("Enter passkey", type="password", key="pass_key_field")
+    if pass_key_input == os.getenv("PASS_KEY"):
+        st.session_state.passkey_validated = True
         st.session_state.show_pass_key = False
-        st.rerun() # Force a rerun to hide the input and show content
-    elif pass_key_input and pass_key_input != "": # Show error only if something was typed and it's wrong
+        st.rerun()
+    elif pass_key_input and pass_key_input != "":
         st.error("Invalid passkey. Please try again.")
 if not st.session_state.show_pass_key:
     # Now create the tabs
@@ -117,7 +123,7 @@ if not st.session_state.show_pass_key:
             if st.button("Upload PDF", use_container_width=True):
                 st.session_state.show_modal = True
                 modal.open()
-                st.experimental_rerun()
+                # st.experimental_rerun()
 
         if modal.is_open() and st.session_state.show_modal:
             with modal.container():
@@ -134,10 +140,10 @@ if not st.session_state.show_pass_key:
                     new_selection = None
                     if uploaded is not None:
                         new_selection = uploaded
-                        source_type='uploaded'
+                        st.session_state.uploaded_type = 'uploaded'
                     elif sample_choice != "None":
                         new_selection = os.path.join(SAMPLE_DIR, sample_choice)
-                        source_type='sample'
+                        st.session_state.uploaded_type = 'sample'
                     
                     if new_selection:
                         if st.session_state.selected_file != new_selection:
@@ -150,7 +156,7 @@ if not st.session_state.show_pass_key:
                             st.session_state.image_analysis = {} # Reset image_analysis
                             st.session_state.formatted = False # Reset formatted flag
                             st.session_state.db_stored = False
-                            if source_type == "sample":
+                            if st.session_state.uploaded_type == "sample":
                                 current_file_name_for_preload = os.path.basename(str(new_selection)) # e.g., "US24-004 = A+_Cavanaugh ADU.pdf"
                                 preloaded_folder_name_without_ext = os.path.splitext(current_file_name_for_preload)[0] # e.g., "US24-004 = A+_Cavanaugh ADU"
                                 st.write(preloaded_folder_name_without_ext)
@@ -218,7 +224,7 @@ if not st.session_state.show_pass_key:
                                     st.session_state.processed = False
                         modal.close()
                         st.session_state.show_modal = False
-                        st.experimental_rerun()
+                        # st.experimental_rerun()
                     else:
                         st.error("Please select a sample or upload a file.")
                         # st.stop() # Not needed if modal stays open
@@ -246,14 +252,19 @@ if not st.session_state.show_pass_key:
 
             if not st.session_state.processed: # Proceed only if not marked as processed
                 with st.spinner("Processing PDF (extracting text & images)..."):
-                    markdown, images = pdf_to_markdown(
-                        st.session_state.selected_file, api_key
-                    )
-                    st.session_state.extracted_text = markdown
-                    st.session_state.extracted_images = images
-                    st.session_state.processed = True
-                    st.session_state.document_name = st.session_state.selected_file # Update to current file
-                st.success("PDF content extracted!")
+                    try:
+                        markdown, images = pdf_to_markdown(
+                            st.session_state.selected_file, api_key
+                        )
+                        st.session_state.extracted_text = markdown
+                        st.session_state.extracted_images = images
+                        st.session_state.processed = True
+                        st.session_state.document_name = st.session_state.selected_file
+                        st.success("PDF content extracted!")
+                    except Exception as e:
+                        st.error(f"Error processing PDF live: {str(e)}")
+                        print(f"PDF live processing failed: {str(e)}")
+                        st.session_state.processed = False
 
         # --- Step 2: Classify Images if processed and not yet categorized ---
         if st.session_state.processed and \
