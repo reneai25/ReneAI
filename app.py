@@ -164,7 +164,7 @@ if not st.session_state.show_pass_key:
                         # st.stop() # Not needed if modal stays open
 
         if st.session_state.uploaded_type == "sample":
-            current_file_name_for_preload = os.path.basename(str(new_selection)) # e.g., "US24-004 = A+_Cavanaugh ADU.pdf"
+            current_file_name_for_preload = os.path.basename(str(st.session_state.selected_file)) # e.g., "US24-004 = A+_Cavanaugh ADU.pdf"
             preloaded_folder_name_without_ext = os.path.splitext(current_file_name_for_preload)[0] # e.g., "US24-004 = A+_Cavanaugh ADU"
             st.write(preloaded_folder_name_without_ext)
             # Path for the preloaded markdown file (e.g., "preloaded/US24-004 = A+_Cavanaugh ADU.md")
