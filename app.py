@@ -164,14 +164,11 @@ if not st.session_state.show_pass_key:
         if st.session_state.uploaded_type == "sample":
             current_file_name_for_preload = os.path.basename(str(st.session_state.selected_file)) # e.g., "US24-004 = A+_Cavanaugh ADU.pdf"
             preloaded_folder_name_without_ext = os.path.splitext(current_file_name_for_preload)[0] # e.g., "US24-004 = A+_Cavanaugh ADU"
-            st.write(preloaded_folder_name_without_ext)
             # Path for the preloaded markdown file (e.g., "preloaded/US24-004 = A+_Cavanaugh ADU.md")
             text_file_path_preload = os.path.join(PRELOADED_DIR, preloaded_folder_name_without_ext + ".md")
-            st.write(text_file_path_preload)
             # Path for the directory containing preloaded image assets 
             # (e.g., "preloaded/US24-004 = A+_Cavanaugh ADU/")
             image_assets_dir_preload = os.path.join(PRELOADED_DIR, preloaded_folder_name_without_ext)
-            st.write(image_assets_dir_preload)
             text_successfully_preloaded = False
             images_successfully_preloaded = False
             
@@ -202,9 +199,8 @@ if not st.session_state.show_pass_key:
                                         st.warning(f"Could not load preloaded image {img_fname} from {images_subfolder}: {e}")
                             if loaded_images:
                                 images_successfully_preloaded = True
-                                st.info(f"Successfully loaded extracted images from: {images_subfolder}")
                             else: # Folder exists but no images loaded
-                                st.info(f"No images found/loaded in preloaded image subfolder: {images_subfolder}")
+                                st.info(f"No images found/loaded in: {images_subfolder}")
                         elif os.path.exists(images_subfolder):
                             st.warning(f"Expected 'images' to be a directory within '{image_assets_dir_preload}', but found a file.")
                         else: # 'images' subfolder doesn't exist
@@ -218,8 +214,7 @@ if not st.session_state.show_pass_key:
                     if text_successfully_preloaded and images_successfully_preloaded:
                         st.session_state.processed = True
                         st.session_state.preloaded=True
-                        st.session_state.document_name = st.session_state.selected_file # Link to the original PDF selection
-                        st.success(f"Pre-extracted data loaded for {current_file_name_for_preload}.")
+                        st.session_state.document_name = st.session_state.selected_file
                     else:
                         st.info(f"No pre-extracted text or images found for {current_file_name_for_preload}. PDF will be processed live if needed.")
                         st.session_state.processed = False # Fallback to live processing
@@ -416,7 +411,6 @@ if not st.session_state.show_pass_key:
                         documents=texts_to_embed, # The text(s) themselves
                         embedding_response=embedding_response # The embedding results
                     )
-                    st.success(f"Text from '{doc_name_for_db}' stored in Qdrant DB.")
             except Exception as e:
                 st.error(f"Error storing text in Qdrant DB: {e}")
 
@@ -435,10 +429,10 @@ if not st.session_state.show_pass_key:
                         text=st.session_state.extracted_text,      # Correct argument order
                         image_analyses=st.session_state.image_analysis # Correct argument order
                     )
-                    st.success(f"Text from '{doc_name_for_db}' stored in Typesense DB.")
+                    
             except Exception as e:
                 st.error(f"Error storing text in Typesense DB: {e}")
-            
+            st.success(f"Text stored in Database")
             st.session_state.db_stored = True # 
 
         # --- Step 4: UI for Viewing Text and Images (shown if PDF processing is complete) ---
