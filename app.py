@@ -193,7 +193,7 @@ if not st.session_state.show_pass_key:
                     loaded_images = {}
                     # Check if the specific directory for this sample's images exists
                     if os.path.isdir(image_assets_dir_preload):
-                        images_subfolder = os.path.join(image_assets_dir_preload, "images")
+                        images_subfolder = image_assets_dir_preload
                         if os.path.isdir(images_subfolder):
                             for img_fname in os.listdir(images_subfolder):
                                 if img_fname.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
